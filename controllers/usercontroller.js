@@ -38,31 +38,46 @@ exports.registration = async (req, res) => {
 };
 
 exports.login = async (req, res) => {
-  const { email, password } = req.body;
   try {
-    const user = await users.findOne({ email });
-    if (!user) return res.status(401).send({ message: 'User not found' });
-    if (user.password !== password) return res.status(401).send({ message: 'Invalid password' });
+    const { email, password } = req.body;
 
-    if (email === 'admin@gmail.com' && password === 'admin123') {
-      user.role = 'admin';
-      await user.save();
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password required' });
     }
 
-    res.send({
-      message: 'user matched successfully',
+    // Admin check
+    if (email === 'admin@gmail.com' && password === 'admin123') {
+      return res.json({
+        message: 'Admin login successful',
+        user: { email, role: 'admin', fullname: 'Admin', mobileno: '', profilePic: '' }
+      });
+    }
+
+    const user = await users.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+
+    // For now (plain comparison, better use bcrypt)
+    if (user.password !== password) {
+      return res.status(401).json({ message: 'Invalid password' });
+    }
+
+    res.json({
+      message: 'Login successful',
       user: {
         _id: user._id,
         email: user.email,
-        role: user.role,
+        role: 'user',
         fullname: user.fullname,
         mobileno: user.mobileno,
         profilePic: user.profilePic
       }
     });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).send({ message: 'Server error' });
+    console.error('LOGIN ERROR:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
 
