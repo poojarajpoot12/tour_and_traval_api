@@ -1,4 +1,6 @@
 const Package = require('../models/packageschema');
+const Cloudinary =require('../config/cloudinary');
+const fs =require('fs');
 
 // Create Package
 exports.createPackage = async (req, res) => {
@@ -15,11 +17,24 @@ exports.createPackage = async (req, res) => {
       startDate,
       endDate,
       category,
+      location,
       isFeatured,
       status
     } = req.body;
 
-    const images = req.files?.map(file => file.filename) || [];
+    const uploadedImages = [];
+
+    if (req.files && req.files.length > 0) {
+      for (let file of req.files) {
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: 'packages'
+        });
+        uploadedImages.push(result.secure_url);
+
+        // Delete local file after upload
+        fs.unlinkSync(file.path);
+      }
+    }
 
     const newPackage = new Package({
       packagename,
@@ -29,15 +44,16 @@ exports.createPackage = async (req, res) => {
       duration,
       startDate,
       endDate,
-      category,
+      category,   // e.g., "Adventure Trips"
+      location,   // e.g., "North India"
       isFeatured,
       status,
-      images
+      images: uploadedImages,
     });
 
     await newPackage.save();
 
-    res.status(201).json({ message: 'Package created successfully', package: newPackage });
+    res.status(201).json({ message: '✅ Package created successfully', package: newPackage });
   } catch (error) {
     console.error('❌ Error in createPackage:', error.message);
     res.status(500).json({ error: error.message });

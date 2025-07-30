@@ -1,16 +1,16 @@
-const multer = require('multer');
-const path = require('path');
+const multer = require("multer");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const cloudinary = require("./cloudinary.js");
+const path = require("path");
 
-// Define storage for uploaded files
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    // All files will be saved to the 'uploads' directory
-    cb(null, './uploads');
+// Cloudinary storage setup
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "tour-app", // Change if you want different folder on Cloudinary
+    allowed_formats: ["jpeg", "jpg", "png", "gif", "webp"],
+    transformation: [{ width: 800, height: 600, crop: "limit" }],
   },
-  filename: function (req, file, cb) {
-    // Prepend timestamp to original filename to avoid name conflicts
-    cb(null, Date.now() + '-' + file.originalname);
-  }
 });
 
 // Filter to allow only specific image formats
@@ -20,17 +20,15 @@ const fileFilter = (req, file, cb) => {
     allowedTypes.test(file.mimetype) &&
     allowedTypes.test(path.extname(file.originalname).toLowerCase());
 
-  cb(null, isValid); // Reject if file format is invalid
+  cb(null, isValid); // If false, file will be rejected
 };
 
 // Define multer upload middleware
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
 });
 
-// NOTE: Currently this upload config is used for profile pics and package images
-// If needed in future, we can extend it to support PDFs, videos etc.
-
+// NOTE: This config is used for profile pics and package images
 module.exports = upload;
