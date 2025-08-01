@@ -7,16 +7,19 @@ const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 4545;
 
-// ✅ Dynamic CORS Setup from .env
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
+// ✅ Setup CORS
+const defaultOrigins = ['http://localhost:3000'];
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
+  : defaultOrigins;
+
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('❌ Not allowed by CORS'));
+      console.error(`❌ CORS error: ${origin} not allowed`);
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true
