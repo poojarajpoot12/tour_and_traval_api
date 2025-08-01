@@ -7,19 +7,21 @@ const path = require('path');
 const app = express();
 const port = process.env.PORT || 4545;
 
-// ✅ Allow all origins temporarily
+// ✅ Step 1: CORS fixed setup
 app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: 'http://localhost:3000', // ✅ yahi likh, no wildcard for credentials
+  credentials: true
 }));
 
-// ✅ Middlewares
+// ✅ Step 2: Required headers for preflight
+app.options('*', cors());
+
+// ✅ Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ✅ MongoDB Connection
+// ✅ MongoDB
 const uri = process.env.MONGO_URI;
 mongoose.connect(uri, {
   useNewUrlParser: true,
@@ -30,13 +32,13 @@ mongoose.connect(uri, {
 
 // ✅ Routes
 app.get('/', (req, res) => {
-    res.send("This is my first API");
+  res.send("This is my first API");
 });
 app.use('/user', require('./routes/userroutes'));
 app.use('/package', require('./routes/packageroutes'));
 app.use('/booking', require('./routes/bookingroutes'));
 
-// ✅ Start Server
+// ✅ Start server
 app.listen(port, () => {
-    console.log(`🚀 Server is running at http://localhost:${port}`);
+  console.log(`🚀 Server running at http://localhost:${port}`);
 });
