@@ -13,6 +13,7 @@ router.get('/select/:id', packageController.getPackageById);
 // router.put('/update/:id', packageController.updatePackage);
 router.delete('/delete/:id', packageController.deletePackage);
 router.get('/category/:category', packageController.getPackagesByCategory);
+router.get('/package',packageController.getFilteredPackages);
 
 
 module.exports = router;

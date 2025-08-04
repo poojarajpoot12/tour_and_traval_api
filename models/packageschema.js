@@ -1,17 +1,19 @@
 const mongoose = require("mongoose");
 
 const packageSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  description: String,
-  price: Number,
+  packagename: { type: String, required: true },   // ✅ from frontend
+  destination: String,
+  pricePerPerson: Number,                           // ✅ from frontend
   duration: String,
+  description: String,
   images: [String], // Array of Cloudinary URLs
-  locationCategory: {
+
+  location: {
     type: String,
     enum: ["North India", "South India", "East India", "West India", "Central India"],
     required: true,
   },
-  packageType: {
+  category: {
     type: String,
     enum: [
       "Romantic Getaways",
@@ -25,6 +27,10 @@ const packageSchema = new mongoose.Schema({
     ],
     required: true,
   },
+
+  isFeatured: { type: Boolean, default: false },
+  status: { type: String, default: "active" },
+
   createdAt: {
     type: Date,
     default: Date.now,

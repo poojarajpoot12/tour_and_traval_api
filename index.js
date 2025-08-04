@@ -9,9 +9,10 @@ const port = process.env.PORT || 4545;
 
 // ✅ Step 1: CORS fixed setup
 app.use(cors({
-  origin: 'http://localhost:3000', // ✅ yahi likh, no wildcard for credentials
+  origin: ['http://localhost:3000', 'https://your-frontend.netlify.app'], // ⬅️ Add live frontend here
   credentials: true
 }));
+
 
 // ✅ Step 2: Required headers for preflight
 app.options('*', cors());

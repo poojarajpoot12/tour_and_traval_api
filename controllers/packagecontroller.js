@@ -14,10 +14,8 @@ exports.createPackage = async (req, res) => {
       pricePerPerson,
       description,
       duration,
-      startDate,
-      endDate,
-      category,
-      location,
+      location,      // ✅ matches frontend's <select name="location">
+      category,      // ✅ matches frontend's <select name="category">
       isFeatured,
       status
     } = req.body;
@@ -26,12 +24,10 @@ exports.createPackage = async (req, res) => {
 
     if (req.files && req.files.length > 0) {
       for (let file of req.files) {
-        const result = await cloudinary.uploader.upload(file.path, {
+        const result = await Cloudinary.uploader.upload(file.path, {
           folder: 'packages'
         });
         uploadedImages.push(result.secure_url);
-
-        // Delete local file after upload
         fs.unlinkSync(file.path);
       }
     }
@@ -42,10 +38,8 @@ exports.createPackage = async (req, res) => {
       pricePerPerson,
       description,
       duration,
-      startDate,
-      endDate,
-      category,   // e.g., "Adventure Trips"
-      location,   // e.g., "North India"
+      location,
+      category,
       isFeatured,
       status,
       images: uploadedImages,
@@ -126,4 +120,20 @@ exports.getPackagesByCategory = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.getFilteredPackages = async (req, res) => {
+  try {
+    const { location, category } = req.query;
+    const filter = {};
+
+    if (location) filter.location = location;
+    if (category) filter.category = category;
+
+    const packages = await Package.find(filter);
+    res.status(200).json(packages);
+  } catch (err) {
+    res.status(500).json({ error: 'Something went wrong' });
+  }
+};
+
 
