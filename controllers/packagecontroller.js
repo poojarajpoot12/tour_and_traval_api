@@ -53,12 +53,12 @@ exports.createPackage = async (req, res) => {
     const newPackage = new Package({
       packagename,
       destination,
-      pricePerPerson,
+      pricePerPerson: Number(pricePerPerson), // ✅ Force number
       description,
       duration,
       location,
       category,
-      isFeatured,
+      isFeatured: isFeatured === 'true' || isFeatured === true, // ✅ Ensure boolean
       status,
       images: uploadedImages,
     });

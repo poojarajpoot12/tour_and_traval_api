@@ -4,7 +4,7 @@ const packageController = require('../controllers/packagecontroller');
 const upload = require('../config/upload');
 
 // Image upload field: "images" (form field name must match!)
-router.post('/create', upload.array('images', 5), packageController.createPackage);
+router.post('/create', upload.array('images'), packageController.createPackage);
 // Update route must also handle file uploads
 router.put('/update/:id', upload.array('images', 5), packageController.updatePackage);
 
