@@ -1,8 +1,29 @@
 const Package = require('../models/packageschema');
-const Cloudinary =require('../config/cloudinary');
-const fs =require('fs');
+const Cloudinary = require('cloudinary').v2;
+const streamifier = require('streamifier');
 
-// Create Package
+// ✅ Cloudinary config (if not in separate file)
+Cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// ✅ Buffer upload helper
+const uploadToCloudinary = (buffer) => {
+  return new Promise((resolve, reject) => {
+    const stream = Cloudinary.uploader.upload_stream(
+      { folder: 'packages' },
+      (err, result) => {
+        if (err) return reject(err);
+        resolve(result.secure_url);
+      }
+    );
+    streamifier.createReadStream(buffer).pipe(stream);
+  });
+};
+
+// ✅ Create Package
 exports.createPackage = async (req, res) => {
   try {
     console.log('📦 req.body:', req.body);
@@ -14,21 +35,18 @@ exports.createPackage = async (req, res) => {
       pricePerPerson,
       description,
       duration,
-      location,      // ✅ matches frontend's <select name="location">
-      category,      // ✅ matches frontend's <select name="category">
+      location,
+      category,
       isFeatured,
-      status
+      status,
     } = req.body;
 
     const uploadedImages = [];
 
     if (req.files && req.files.length > 0) {
-      for (let file of req.files) {
-        const result = await Cloudinary.uploader.upload(file.path, {
-          folder: 'packages'
-        });
-        uploadedImages.push(result.secure_url);
-        fs.unlinkSync(file.path);
+      for (const file of req.files) {
+        const imageUrl = await uploadToCloudinary(file.buffer);
+        uploadedImages.push(imageUrl);
       }
     }
 
@@ -50,12 +68,11 @@ exports.createPackage = async (req, res) => {
     res.status(201).json({ message: '✅ Package created successfully', package: newPackage });
   } catch (error) {
     console.error('❌ Error in createPackage:', error.message);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Server error while creating package' });
   }
 };
 
-
-// Get All Packages
+// ✅ Get All Packages
 exports.getAllPackages = async (req, res) => {
   try {
     const packages = await Package.find();
@@ -65,7 +82,7 @@ exports.getAllPackages = async (req, res) => {
   }
 };
 
-// Get Single Package
+// ✅ Get Package by ID
 exports.getPackageById = async (req, res) => {
   try {
     const pkg = await Package.findById(req.params.id);
@@ -76,44 +93,54 @@ exports.getPackageById = async (req, res) => {
   }
 };
 
-// Update Package
+// ✅ Update Package
 exports.updatePackage = async (req, res) => {
   try {
     const packageId = req.params.id;
-    const updatedField = req.body;
-    if(req.files && req.files.length>0){
-      updatedField.images = req.files.map(file=>file.filename);
+    const updatedFields = req.body;
+
+    if (req.files && req.files.length > 0) {
+      const newImages = [];
+      for (const file of req.files) {
+        const imageUrl = await uploadToCloudinary(file.buffer);
+        newImages.push(imageUrl);
+      }
+      updatedFields.images = newImages;
     }
-    const updated = await Package.findByIdAndUpdate(packageId,updatedField, { new: true });
-    if (!updated) return res.status(404).json({ error: 'Package not found' });
-    res.status(200).json({ message: 'Package updated', package: updated });
+
+    const updatedPackage = await Package.findByIdAndUpdate(packageId, updatedFields, {
+      new: true,
+    });
+
+    if (!updatedPackage) return res.status(404).json({ error: 'Package not found' });
+
+    res.status(200).json({ message: '✅ Package updated', package: updatedPackage });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-// Delete Package
+// ✅ Delete Package
 exports.deletePackage = async (req, res) => {
   try {
     const deleted = await Package.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ error: 'Package not found' });
-    res.status(200).json({ message: 'Package deleted successfully' });
+    res.status(200).json({ message: '🗑️ Package deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
-// Get Packages by Category
+
+// ✅ Get Packages by Category
 exports.getPackagesByCategory = async (req, res) => {
   try {
     const { category } = req.params;
 
-    // If 'All' is requested, return all packages
     if (category === 'All') {
       const allPackages = await Package.find();
       return res.status(200).json(allPackages);
     }
 
-    // Else filter by category
     const packages = await Package.find({ category });
     res.status(200).json(packages);
   } catch (error) {
@@ -121,6 +148,7 @@ exports.getPackagesByCategory = async (req, res) => {
   }
 };
 
+// ✅ Get Filtered Packages by location & category
 exports.getFilteredPackages = async (req, res) => {
   try {
     const { location, category } = req.query;
@@ -135,5 +163,3 @@ exports.getFilteredPackages = async (req, res) => {
     res.status(500).json({ error: 'Something went wrong' });
   }
 };
-
-
